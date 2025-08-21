@@ -2,12 +2,20 @@
 from tkinter import *
 import pandas as pd
 import random
+import pygame
 
 # --- Constants / Config ---
 BACKGROUND_COLOR = "#B1DDC6"
 COUNTDOWN_SECONDS = 3  # Seconds to wait before revealing translation
 FRONT_TEXT_COLOR = "#000000"
 BACKGROUND_TEXT_COLOR = "#FFFFFF"
+
+# --- Initialize Sound ---
+pygame.mixer.init()
+try:
+    timer_sound = pygame.mixer.Sound("sounds/timer_sound.wav")
+except pygame.error:
+    timer_sound = None  # Fallback if sound file not found
 
 # --- State Variables ---
 current_word = {}
@@ -84,10 +92,13 @@ def show_word():
 
 
 def update_timer():
-    """Update the visible numeric countdown."""
+    """Update the visible numeric countdown and play timer sound."""
     global timer_count
     if timer_count > 0:
         canvas.itemconfig(timer_text, text=str(timer_count))
+        # Play timer sound if available
+        if timer_sound:
+            timer_sound.play()
         timer_count -= 1
         window.after(1000, update_timer)
     else:
