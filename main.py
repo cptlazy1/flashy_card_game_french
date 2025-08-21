@@ -6,6 +6,8 @@ import random
 # --- Constants / Config ---
 BACKGROUND_COLOR = "#B1DDC6"
 COUNTDOWN_SECONDS = 3  # Seconds to wait before revealing translation
+FRONT_TEXT_COLOR = "#000000"
+BACKGROUND_TEXT_COLOR = "#FFFFFF"  # Not used, but could be for future styling
 
 # --- State Variables ---
 current_word = {}
@@ -24,8 +26,8 @@ card_front_img = PhotoImage(file="images/card_front.png")
 card_back_img = PhotoImage(file="images/card_back.png")
 canvas_image = canvas.create_image(400, 263, image=card_front_img)
 canvas.grid(row=0, column=0, columnspan=2)
-word_text = canvas.create_text(400, 150, text="", font=("Ariel", 40, "italic"))
-translation_text = canvas.create_text(400, 263, text="", font=("Ariel", 40, "bold"))
+word_text = canvas.create_text(400, 150, text="", font=("Ariel", 40, "italic"), fill=FRONT_TEXT_COLOR)
+translation_text = canvas.create_text(400, 263, text="", font=("Ariel", 40, "bold"), fill=BACKGROUND_TEXT_COLOR)
 timer_text = canvas.create_text(750, 50, text="", font=("Ariel", 24, "bold"), fill="red")
 check_img = PhotoImage(file="images/right.png")
 cross_img = PhotoImage(file="images/wrong.png")
