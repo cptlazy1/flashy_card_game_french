@@ -34,11 +34,6 @@ cross_button = Button(image=cross_img, highlightthickness=0)
 cross_button.grid(row=1, column=0)
 
 # --- Data Loading ---
-# We keep a working list 'data' of dicts, each dict like: {"French": "...", "English": "..."}.
-# 1. First try to load the user's progress file (words still to learn).
-# 2. If it does not exist (first run), fall back to the full source list.
-# 3. Convert the resulting DataFrame into a list[dict] for quick random.choice usage.
-# NOTE: Ensure CSV files have columns exactly: French,English
 try:
     data = pd.read_csv("data/words_to_learn.csv")
 except FileNotFoundError:
@@ -51,11 +46,17 @@ else:
 def show_word():
     """Show a new French word, start (and display) the countdown, disable buttons."""
     global current_word, timer, timer_count
+
     # Cancel any pending translation reveal to avoid race conditions if user advances quickly.
+    # This is a simple way to ensure only one countdown is active at a time.
+    # If the timer is already running, cancel it before starting a new one.
+    # Defensive programming: cancel any translation reveal that might be pending.
+    # Even with the buttons disabled, rapid programmatic calls to show_word()
+    # could lead to multiple reveals.
     if timer is not None:
         window.after_cancel(timer)
-    check_button.config(state=DISABLED)
-    cross_button.config(state=DISABLED)
+    check_button.config(state="disabled")
+    cross_button.config(state="disabled")
     current_word = random.choice(data)
     canvas.itemconfig(canvas_image, image=card_front_img)
     canvas.itemconfig(word_text, text=current_word["French"])
@@ -79,21 +80,19 @@ def show_translation():
     canvas.itemconfig(canvas_image, image=card_back_img)
     canvas.itemconfig(translation_text, text=current_word["English"])
     canvas.itemconfig(timer_text, text="")
-    check_button.config(state=NORMAL)
-    cross_button.config(state=NORMAL)
+    check_button.config(state="normal")
+    cross_button.config(state="normal")
 
 def on_check():
     """User knows the word: remove it from practice list and show next."""
     data.remove(current_word)
     show_word()
 
+
 def on_cross():
     """User does not know the word: keep it (simple reshuffle logic) and show next."""
-    # Move current word toward the end (light-weight spacing before it reappears).
-    for i, word in enumerate(data):
-        if word == current_word:
-            data.append(data.pop(i))
-            break
+    data.remove(current_word)
+    data.append(current_word)
     show_word()
 
 check_button.config(command=on_check)
