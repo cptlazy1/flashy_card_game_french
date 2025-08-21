@@ -17,6 +17,11 @@ try:
 except pygame.error:
     timer_sound = None  # Graceful fallback if sound file missing
 
+try:
+    ending_sound = pygame.mixer.Sound("sounds/ending_sound.wav")
+except pygame.error:
+    ending_sound = None  # Graceful fallback if sound file missing
+
 # --- State Variables ---
 current_word = {}     # Currently displayed word dictionary
 previous_word = None  # Prevent consecutive duplicate words
@@ -150,6 +155,10 @@ def show_congratulations():
     canvas.itemconfig(timer_text, text="")
     check_button.config(state="disabled")
     cross_button.config(state="disabled")
+
+    # Play ending sound if enabled and available
+    if ending_sound and sound_enabled.get():
+        ending_sound.play()
 
     # Auto-restart after 3 seconds
     window.after(3000, reset_game)
