@@ -7,13 +7,14 @@ import random
 BACKGROUND_COLOR = "#B1DDC6"
 COUNTDOWN_SECONDS = 3  # Seconds to wait before revealing translation
 FRONT_TEXT_COLOR = "#000000"
-BACKGROUND_TEXT_COLOR = "#FFFFFF"  # Not used, but could be for future styling
+BACKGROUND_TEXT_COLOR = "#FFFFFF"
 
 # --- State Variables ---
 current_word = {}
 previous_word = None  # Track the last shown word to avoid duplicates
 timer = None          # after() id for the scheduled translation reveal
 timer_count = 0       # remaining seconds in visible countdown
+data = []            # Practice list - words still to learn
 
 # --- UI Setup ---
 window = Tk()
@@ -37,28 +38,35 @@ cross_button = Button(image=cross_img, highlightthickness=0, bg=BACKGROUND_COLOR
 cross_button.grid(row=1, column=0)
 
 # --- Data Loading ---
+# Load practice list if it exists, otherwise create from original list
 try:
-    data = pd.read_csv("data/words_to_learn.csv")
+    data_df = pd.read_csv("data/words_to_learn.csv")
+    data = data_df.to_dict(orient="records")
 except FileNotFoundError:
+    # First time: copy original list to practice list
     original_data = pd.read_csv("data/french_words.csv")
     data = original_data.to_dict(orient="records")
-else:
-    data = data.to_dict(orient="records")
+    pd.DataFrame(data).to_csv("data/words_to_learn.csv", index=False)
 
 # --- Functions ---
 def show_word():
-    """Show a new French word, start (and display) the countdown, disable buttons."""
+    """Show a new French word, start countdown, disable buttons."""
     global current_word, previous_word, timer, timer_count
 
-    # Cancel any pending translation reveal to avoid race conditions
+    # Check if practice list is empty
+    if not data:
+        show_congratulations()
+        return
+
+    # Cancel any pending translation reveal
     if timer is not None:
         window.after_cancel(timer)
         timer = None
 
     # Prevent showing the same word twice in a row
-    if len(data) > 1:  # Only avoid duplicates if we have more than one word
+    if len(data) > 1:
         current_word = random.choice(data)
-        while current_word == previous_word and len(data) > 1:
+        while current_word == previous_word:
             current_word = random.choice(data)
     else:
         current_word = random.choice(data)
@@ -93,20 +101,77 @@ def show_translation():
     check_button.config(state="normal")
     cross_button.config(state="normal")
 
-def on_check():
-    """User knows the word: remove it from practice list and show next."""
-    data.remove(current_word)
+def show_congratulations():
+    """Show congratulatory message and reset the game."""
+    global data
+
+    # Cancel any pending timer
+    if timer is not None:
+        window.after_cancel(timer)
+
+    # Show congratulations
+    canvas.itemconfig(canvas_image, image=card_front_img)
+    canvas.itemconfig(word_text, text="Congratulations!")
+    canvas.itemconfig(translation_text, text="You've learned all words!\nRestarting...")
+    canvas.itemconfig(timer_text, text="")
+    check_button.config(state="disabled")
+    cross_button.config(state="disabled")
+
+    # Reset game after 3 seconds
+    window.after(3000, reset_game)
+
+def reset_game():
+    """Reset the game by reloading the original word list."""
+    global data
+
+    # Reload original list
+    original_data = pd.read_csv("data/french_words.csv")
+    data = original_data.to_dict(orient="records")
+
+    # Save reset practice list
+    pd.DataFrame(data).to_csv("data/words_to_learn.csv", index=False)
+
+    # Start new game
     show_word()
 
+def on_check():
+    """User knows the word: move to known list and show next."""
+    global data
+
+    # Add to known words list
+    try:
+        known_words = pd.read_csv("data/words_known.csv")
+    except FileNotFoundError:
+        known_words = pd.DataFrame(columns=["French", "English"])
+
+    # Add current word to known words
+    new_known = pd.DataFrame([current_word])
+    known_words = pd.concat([known_words, new_known], ignore_index=True)
+    known_words.to_csv("data/words_known.csv", index=False)
+
+    # Remove from practice list
+    data.remove(current_word)
+
+    # Update practice list file
+    if data:
+        pd.DataFrame(data).to_csv("data/words_to_learn.csv", index=False)
+    else:
+        # Create empty file if no words left
+        pd.DataFrame(columns=["French", "English"]).to_csv("data/words_to_learn.csv", index=False)
+
+    show_word()
 
 def on_cross():
-    """User does not know the word: keep it (simple reshuffle logic) and show next."""
+    """User does not know the word: keep in practice list and show next."""
+    # Move word to end of list for later practice
     data.remove(current_word)
     data.append(current_word)
     show_word()
 
+# --- Main ---
 check_button.config(command=on_check)
 cross_button.config(command=on_cross)
 
 show_word()
+
 window.mainloop()
