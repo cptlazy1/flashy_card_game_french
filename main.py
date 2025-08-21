@@ -28,9 +28,9 @@ translation_text = canvas.create_text(400, 263, text="", font=("Ariel", 40, "bol
 timer_text = canvas.create_text(750, 50, text="", font=("Ariel", 24, "bold"), fill="red")
 check_img = PhotoImage(file="images/right.png")
 cross_img = PhotoImage(file="images/wrong.png")
-check_button = Button(image=check_img, highlightthickness=0)
+check_button = Button(image=check_img, highlightthickness=0, bg=BACKGROUND_COLOR, borderwidth=0, relief="flat")
 check_button.grid(row=1, column=1)
-cross_button = Button(image=cross_img, highlightthickness=0)
+cross_button = Button(image=cross_img, highlightthickness=0, bg=BACKGROUND_COLOR, borderwidth=0, relief="flat")
 cross_button.grid(row=1, column=0)
 
 # --- Data Loading ---
