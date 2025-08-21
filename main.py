@@ -30,20 +30,34 @@ window.title("Flashy")
 window.minsize(880, 700)
 window.maxsize(880, 700)
 window.config(padx=50, pady=40, bg=BACKGROUND_COLOR)
+
+# Create BooleanVar after Tk() window is created
+sound_enabled = BooleanVar(value=True)  # Sound toggle state
+
 canvas = Canvas(width=800, height=526, bg=BACKGROUND_COLOR, highlightthickness=0)
 card_front_img = PhotoImage(file="images/card_front.png")
 card_back_img = PhotoImage(file="images/card_back.png")
 canvas_image = canvas.create_image(400, 263, image=card_front_img)
-canvas.grid(row=0, column=0, columnspan=2)
+canvas.grid(row=0, column=0, columnspan=4)
 word_text = canvas.create_text(400, 150, text="", font=("Ariel", 40, "italic"), fill=FRONT_TEXT_COLOR)
 translation_text = canvas.create_text(400, 263, text="", font=("Ariel", 40, "bold"), fill=BACKGROUND_TEXT_COLOR)
 timer_text = canvas.create_text(750, 50, text="", font=("Ariel", 24, "bold"), fill="red")
 check_img = PhotoImage(file="images/right.png")
 cross_img = PhotoImage(file="images/wrong.png")
-check_button = Button(image=check_img, highlightthickness=0, bg=BACKGROUND_COLOR, borderwidth=0, relief="flat")
-check_button.grid(row=1, column=1)
 cross_button = Button(image=cross_img, highlightthickness=0, bg=BACKGROUND_COLOR, borderwidth=0, relief="flat")
 cross_button.grid(row=1, column=0)
+
+# New centered buttons
+quit_button = Button(text="Quit", font=("Arial", 12, "bold"), bg="red", fg="white",
+                    highlightthickness=0, borderwidth=0, relief="flat", padx=20, pady=5)
+quit_button.grid(row=1, column=1, padx=10)
+
+sound_toggle = Checkbutton(text="Sound", variable=sound_enabled, font=("Arial", 10),
+                          bg=BACKGROUND_COLOR, highlightthickness=0, borderwidth=0)
+sound_toggle.grid(row=1, column=2, padx=10)
+
+check_button = Button(image=check_img, highlightthickness=0, bg=BACKGROUND_COLOR, borderwidth=0, relief="flat")
+check_button.grid(row=1, column=3)
 
 # --- Data Loading ---
 # Load practice list if it exists, otherwise create from original list
@@ -96,8 +110,8 @@ def update_timer():
     global timer_count
     if timer_count > 0:
         canvas.itemconfig(timer_text, text=str(timer_count))
-        # Play timer sound if available
-        if timer_sound:
+        # Play timer sound if available and enabled
+        if timer_sound and sound_enabled.get():
             timer_sound.play()
         timer_count -= 1
         window.after(1000, update_timer)
@@ -179,9 +193,14 @@ def on_cross():
     data.append(current_word)
     show_word()
 
+def quit_game():
+    """Quit the application."""
+    window.destroy()
+
 # --- Main ---
 check_button.config(command=on_check)
 cross_button.config(command=on_cross)
+quit_button.config(command=quit_game)
 
 show_word()
 
