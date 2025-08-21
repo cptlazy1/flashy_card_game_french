@@ -9,6 +9,7 @@ COUNTDOWN_SECONDS = 3  # Seconds to wait before revealing translation
 
 # --- State Variables ---
 current_word = {}
+previous_word = None  # Track the last shown word to avoid duplicates
 timer = None          # after() id for the scheduled translation reveal
 timer_count = 0       # remaining seconds in visible countdown
 
@@ -45,25 +46,32 @@ else:
 # --- Functions ---
 def show_word():
     """Show a new French word, start (and display) the countdown, disable buttons."""
-    global current_word, timer, timer_count
+    global current_word, previous_word, timer, timer_count
 
-    # Cancel any pending translation reveal to avoid race conditions if user advances quickly.
-    # This is a simple way to ensure only one countdown is active at a time.
-    # If the timer is already running, cancel it before starting a new one.
-    # Defensive programming: cancel any translation reveal that might be pending.
-    # Even with the buttons disabled, rapid programmatic calls to show_word()
-    # could lead to multiple reveals.
+    # Cancel any pending translation reveal to avoid race conditions
     if timer is not None:
         window.after_cancel(timer)
+        timer = None
+
+    # Prevent showing the same word twice in a row
+    if len(data) > 1:  # Only avoid duplicates if we have more than one word
+        current_word = random.choice(data)
+        while current_word == previous_word and len(data) > 1:
+            current_word = random.choice(data)
+    else:
+        current_word = random.choice(data)
+
+    previous_word = current_word
+
     check_button.config(state="disabled")
     cross_button.config(state="disabled")
-    current_word = random.choice(data)
     canvas.itemconfig(canvas_image, image=card_front_img)
     canvas.itemconfig(word_text, text=current_word["French"])
     canvas.itemconfig(translation_text, text="")
     timer_count = COUNTDOWN_SECONDS
     update_timer()
     timer = window.after(COUNTDOWN_SECONDS * 1000, show_translation)
+
 
 def update_timer():
     """Update the visible numeric countdown."""
